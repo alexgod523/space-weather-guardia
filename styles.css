@@ -31,3 +31,5 @@
 @media(max-width:620px){.globe-stage{min-height:420px}.globe-stage .map-toolbar{height:76px;min-height:76px;padding:8px 10px;display:flex;align-content:center;flex-wrap:wrap;row-gap:5px}.globe-feed-label{width:100%;font-size:9px}.globe-toolbar-controls{width:100%;justify-content:space-between;gap:5px}.globe-stage .hemisphere-toggle button{font-size:9px;padding:5px 6px}.globe-zoom-controls button{min-width:26px;height:25px}.globe-reset-button{height:25px;padding:0 6px;font-size:9px}.globe-stage #aurora-map{top:76px;height:calc(100% - 99px)}.globe-help{top:83px;left:10px;right:auto;font-size:8px}.globe-readout{left:9px;bottom:7px;font-size:8px}.globe-stage .map-empty{inset:76px 0 25px}}
 .globe-help{font-size:10px;max-width:calc(100% - 30px)}.globe-readout{font-size:10px}@media(max-width:620px){.globe-help{font-size:9px}.globe-readout{font-size:9px}}
 .globe-stage #aurora-map:focus-visible{outline:2px solid #f0b24a;outline-offset:-4px}
+.altitude-control small{font-size:10px;line-height:1.35;color:#7d8795;margin-top:4px}.impact-reading small{font-size:10px;line-height:1.4;max-width:360px;margin-left:auto}
+
