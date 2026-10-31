@@ -159,7 +159,70 @@ function altitudeLabel(altitude = state.altitude) {
 }
 
 function altitudeContext(altitude = state.altitude) {
-  return ({ low: "Surface / ground context", mid: "Flight-level context", high: "High-altitude / space context" })[altitude] || "Surface / ground context";
+  return ({ low: "Surface / ground context", mid: "Flight-level context", high: "High-altitude context (12+ km; not necessarily orbit)" })[altitude] || "Surface / ground context";
+}
+
+function altitudeImpactProfile(altitude = state.altitude, sLevel = 0, available = state.feedStatus.scales === "ok", latitude = null) {
+  const bands = {
+    low: { name: "Low · 0–3 km", context: "surface and ground operations" },
+    mid: { name: "Mid · 3–12 km", context: "a broad flight-level band" },
+    high: { name: "High · 12+ km", context: "high-altitude operations; this band does not mean orbit" },
+  };
+  const band = bands[altitude] || bands.low;
+  const placeNote = latitude !== null && Math.abs(latitude) >= 55
+    ? " The selected coordinate is at high geographic latitude; that is not geomagnetic latitude or a route-specific assessment."
+    : "";
+  if (!available) {
+    return {
+      label: `${band.name} · S scale unavailable`,
+      detail: `${band.context}: NOAA solar-radiation readings have not loaded, so altitude-specific space-weather context is unavailable.${placeNote}`,
+      summary: `${band.name}: waiting for NOAA solar-radiation data.`,
+      level: null,
+      explanation: `${band.name} is selected, but NOAA's S scale is unavailable. This app cannot estimate radiation dose or local exposure.${placeNote}`,
+      action: `For the ${band.name} band, check current NOAA solar-radiation products and any route-, workplace-, or mission-specific guidance relevant to your actual operating altitude. This page does not calculate dose.`,
+    };
+  }
+  if (sLevel === 0) {
+    const detail = altitude === "low"
+      ? "No current NOAA S-scale storm. The S scale is a global particle indicator, not a ground-level dose estimate."
+      : altitude === "mid"
+        ? "No current NOAA S-scale storm. This broad flight-level profile is context only; actual exposure depends on route, altitude, and official aviation guidance."
+        : "No current NOAA S-scale storm. The 12+ km band is broad high-altitude context, not an orbital or dose estimate.";
+    return {
+      label: `${band.name} · no S-scale storm`, detail: `${detail}${placeNote}`, level: 0,
+      summary: altitude === "low" ? "Ground context · NOAA S scale is not a ground-dose estimate."
+        : altitude === "mid" ? "Flight-level context · use actual route and altitude guidance."
+          : "12+ km context · high altitude is not automatically orbit.",
+      explanation: `${detail}${placeNote}`,
+      action: `For the ${band.name} band, continue routine checks. Use route- or mission-specific radiation guidance if your actual work takes place at altitude; this global scale does not measure local dose.`,
+    };
+  }
+  if (altitude === "low") {
+    const detail = `NOAA reports S${sLevel}. The atmosphere provides shielding, but this global scale cannot determine ground-level dose or personal exposure; follow local official guidance for specific concerns.`;
+    return {
+      label: `S${sLevel} · ground context`, detail: `${detail}${placeNote}`, level: 0,
+      summary: `S${sLevel} · ground context; global scale does not estimate local dose.`,
+      explanation: `${band.name}: ${detail}${placeNote}`,
+      action: `For the ${band.name} band, do not interpret NOAA's global S${sLevel} value as a local dose reading. Follow official local advisories for exposure questions.`,
+    };
+  }
+  const watch = sLevel >= 2;
+  const severity = sLevel >= 3 ? "elevated" : watch ? "watch" : "minor";
+  const detail = altitude === "mid"
+    ? `NOAA reports S${sLevel}. From S2, NOAA notes possible elevated exposure for passengers and crew on high-flying aircraft at high latitudes; actual route, altitude, and shielding matter. This is not a dose estimate.`
+    : `NOAA reports S${sLevel}. High-flying aircraft at high latitudes can have radiation considerations from S2; satellite effects depend on the event and mission. 12+ km is not automatically orbit, and this is not a dose estimate.`;
+  return {
+    label: watch ? `S${sLevel} · ${altitude === "mid" ? "flight-level" : "high-altitude"} ${severity}` : `S${sLevel} · minor scale event`,
+    detail: `${detail}${placeNote}`,
+    summary: altitude === "mid"
+      ? `S${sLevel} · flight-level context; route-specific guidance matters.`
+      : `S${sLevel} · 12+ km context; not an orbital or dose estimate.`,
+    level: sLevel >= 4 ? 3 : sLevel >= 3 ? 2 : watch ? 1 : 0,
+    explanation: `${band.name}: ${detail}${placeNote}`,
+    action: watch
+      ? `At the ${band.name} band, check current official aviation or mission radiation guidance for the actual route and altitude. Do not infer a dose or change operations from this global scale alone.`
+      : `At the ${band.name} band, NOAA S1 is a minor event and does not indicate a biological radiation hazard. Keep normal monitoring and follow workplace procedures.`,
+  };
 }
 
 function next24HourKpPeak() {
@@ -482,9 +545,10 @@ function updateLocalImpactContext() {
   const sLevel = scaleValue(gScaleEntry(), "S");
   const radiationAvailable = state.feedStatus.scales === "ok";
   const scaleDate = gScaleEntry()?.DateStamp ? `NOAA ${gScaleEntry().DateStamp} · ` : "";
-  const radiationLabel = !radiationAvailable ? "Unavailable" : sLevel === 0 ? "No S-scale event" : `NOAA S${sLevel} event`;
-  const radiationNote = !radiationAvailable ? "NOAA solar radiation scale unavailable" : `${scaleDate}${altitudeContext()} · ${place ? latitudeContext(Number(place.latitude)) : "global context"} · global scale only; no dose estimate`;
-  updateImpactRow("radiation", radiationLabel, radiationNote, !radiationAvailable ? null : sLevel === 0 ? 0 : Math.min(3, sLevel));
+  const altitudeProfile = altitudeImpactProfile(state.altitude, sLevel, radiationAvailable, place ? Number(place.latitude) : null);
+  setLabel("#altitude-impact", altitudeProfile.summary);
+  const radiationNote = `${scaleDate}${altitudeProfile.detail}`;
+  updateImpactRow("radiation", radiationAvailable ? altitudeProfile.label : "Unavailable", radiationNote, altitudeProfile.level);
   if (!place) {
     setLabel("#aurora-local-probability", "Set a location");
     return;
@@ -977,10 +1041,11 @@ function guidanceForSector(sector) {
   };
   const suffix = speed === null ? "" : ` Latest solar-wind speed is ${Math.round(speed)} km/s.`;
   const placeSuffix = state.location ? ` For ${state.location.name || "the selected location"} (${latitudeContext(Number(state.location.latitude))}, ${stampLocalTime(new Date(), false)} local), the altitude band is ${altitudeLabel()}. Geographic latitude is only a broad proxy for local effects.` : ` Times use ${browserTimeZone()} until you select a location.`;
+  const altitudeProfile = altitudeImpactProfile(state.altitude, scaleValue(gScaleEntry(), "S"), state.feedStatus.scales === "ok", state.location ? Number(state.location.latitude) : null);
   const current = state.localWeather?.current;
   const cloud = asNumber(current?.cloud_cover);
   const skySuffix = sector === "public" && state.localWeatherStatus === "ok" && current ? ` The local sky model reports ${weatherCodeLabel(current.weather_code).toLowerCase()}, ${cloud === null ? "cloud cover unavailable" : `${Math.round(cloud)}% cloud cover`}, and ${current.is_day === 0 ? "night" : "daylight"} now.` : "";
-  return conditionsReady ? `${copy[sector] || copy.survey}${suffix}${placeSuffix}${skySuffix}` : "Live readings are still loading. Check NOAA SWPC for the current bulletin, then return here for a profile-specific summary.";
+  return conditionsReady ? `${copy[sector] || copy.survey}${suffix}${placeSuffix}${skySuffix} ${altitudeProfile.explanation}` : `Live readings are still loading. Check NOAA SWPC for the current bulletin, then return here for a profile-specific summary. ${altitudeProfile.explanation}`;
 }
 
 function updateSectorGuidance() {
@@ -1094,12 +1159,13 @@ function renderProfessionImpact() {
   const localDay = localDayValue === 1 ? "daylight" : localDayValue === 0 ? "night" : null;
   const kind = classifyProfession(state.profession);
   const guidance = professionGuidance(kind, { profession: state.profession, kp, gLevel, rLevel, sLevel, hasGeomagnetic, hasScales, latitude, localDay, altitude: altitudeLabel() });
+  const altitudeProfile = altitudeImpactProfile(state.altitude, sLevel ?? 0, hasScales, latitude);
   const values = [];
   if (kp !== null) values.push(`Kp ${kp.toFixed(1)}`);
   if (hasScales) values.push(`G${gLevel ?? 0} · R${rLevel} · S${sLevel}`);
   setLabel("#profession-category", `${state.profession.toUpperCase()} · ${kind === "general" ? "GENERAL MATCH" : `${kind.toUpperCase()} DEPENDENCIES`}`);
   setLabel("#profession-result-title", guidance.title);
-  setLabel("#profession-work-impact", guidance.impact);
+  setLabel("#profession-work-impact", `${guidance.impact} ${altitudeProfile.explanation}`);
   setLabel("#profession-life-impact", guidance.life);
   const status = $("#profession-status");
   if (status) {
@@ -1119,7 +1185,7 @@ function renderProfessionImpact() {
   const actions = $("#profession-actions");
   if (actions) {
     actions.replaceChildren();
-    guidance.actions.forEach((action) => { const item = document.createElement("li"); item.textContent = action; actions.append(item); });
+    [...guidance.actions, altitudeProfile.action].forEach((action) => { const item = document.createElement("li"); item.textContent = action; actions.append(item); });
   }
   const sources = $("#profession-sources");
   if (sources) {
@@ -1518,3 +1584,4 @@ function boot() {
 }
 
 boot();
+
