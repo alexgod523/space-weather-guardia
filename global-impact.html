@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10151f">
+  <meta name="description" content="Explore live NOAA space-weather impact potential around the world on an interactive 3D globe.">
+  <title>Global Impact Map — SpaceWeather Guardian</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./global-impact.css">
+  <script src="./global-impact.js" defer></script>
+</head>
+<body class="global-impact-page">
+  <header class="topbar">
+    <a class="brand" href="./index.html#overview" aria-label="SpaceWeather Guardian home">
+      <span class="brand-mark" aria-hidden="true"><span></span></span>
+      <span class="brand-copy"><strong>SpaceWeather</strong><small>GUARDIAN / GLOBAL VIEW</small></span>
+    </a>
+    <div class="global-topbar-actions">
+      <span class="live-indicator" id="global-feed-status"><i></i><span>Connecting to NOAA</span></span>
+      <button class="icon-button" id="global-refresh" type="button" aria-label="Refresh NOAA data" title="Refresh NOAA data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M5.6 9a7 7 0 0 1 11.7-2L20 12M4 12l2.7 5a7 7 0 0 0 11.7-2"/></svg></button>
+      <a class="global-back-link" href="./index.html#impact">← Dashboard</a>
+    </div>
+  </header>
+
+  <main class="global-impact-main">
+    <section class="global-page-heading">
+      <div><div class="eyebrow">GLOBAL SPACE WEATHER · LIVE NOAA INDICATORS</div><h1>Where could impacts reach?</h1><p>Explore possible space-weather effects around Earth. Drag to rotate, zoom in, then hover or click a region to inspect its current context.</p></div>
+      <div class="global-heading-time"><span>UPDATED · UTC</span><strong id="global-updated">Waiting for first reading</strong></div>
+    </section>
+
+    <section class="global-metrics" aria-label="Current NOAA space weather readings">
+      <article class="global-metric global-metric-flare"><span>X-RAY FLARE</span><strong id="global-xray">—</strong><small id="global-xray-time">GOES · awaiting feed</small></article>
+      <article class="global-metric"><span>RADIO BLACKOUT</span><strong id="global-r">R—</strong><small id="global-r-name">NOAA R scale · awaiting feed</small></article>
+      <article class="global-metric"><span>GEOMAGNETIC</span><strong id="global-g">G—</strong><small id="global-g-name">Kp / NOAA G scale · awaiting feed</small></article>
+      <article class="global-metric"><span>SOLAR RADIATION</span><strong id="global-s">S—</strong><small id="global-s-name">NOAA S scale · awaiting feed</small></article>
+    </section>
+
+    <section class="global-map-layout">
+      <article class="global-globe-card">
+        <div class="global-globe-heading"><div><div class="eyebrow">INTERACTIVE GLOBAL IMPACT VIEW</div><h2 id="impact-layer-title">Solar flare · radio blackout potential</h2><p id="impact-layer-copy">NOAA R-scale context on the sunlit side of Earth.</p></div><div class="global-zoom-controls" role="group" aria-label="Globe zoom"><button id="global-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button><button id="global-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button><button id="global-reset" type="button" aria-label="Reset globe view">Reset</button></div></div>
+        <div class="global-layer-tabs" role="group" aria-label="Select impact layer">
+          <button class="active" type="button" data-layer="radio">Solar flare · radio</button>
+          <button type="button" data-layer="geomagnetic">Geomagnetic storm</button>
+          <button type="button" data-layer="radiation">Solar radiation</button>
+        </div>
+        <div class="global-globe-stage">
+          <canvas id="global-impact-globe" tabindex="0" role="application" aria-label="Interactive global space-weather impact globe" aria-describedby="global-globe-help"></canvas>
+          <span class="global-globe-help" id="global-globe-help">Drag to rotate · hover for region details · scroll or use + / − to zoom · arrow keys rotate</span>
+          <span class="global-globe-readout" id="global-globe-readout">Loading the global NOAA impact view…</span>
+          <div class="global-map-empty" id="global-map-empty" hidden>Live NOAA readings are not available. Refresh or check the source links below.</div>
+        </div>
+        <div class="global-map-footer"><div class="global-map-legend" id="global-map-legend"><span><i class="legend-green"></i>Low / no active scale event</span><span><i class="legend-yellow"></i>Moderate</span><span><i class="legend-red"></i>High</span><span><i class="legend-night"></i>Night side · lower direct flare exposure</span></div><span class="global-subsolar" id="global-subsolar">Calculating sunlight</span></div>
+      </article>
+
+      <aside class="global-detail-card">
+        <div class="eyebrow">REGION INSPECTOR</div>
+        <h2 id="inspected-region-title">Select a place on the globe</h2>
+        <div class="global-impact-level" id="inspected-impact-level"><i></i><span>Waiting for selection</span></div>
+        <p id="inspected-impact-copy">Click a visible region on the globe to pin its current impact context. NOAA scales are global indicators, not a location-specific outage forecast.</p>
+        <div class="global-detail-facts"><div><span>Approximate area</span><strong id="inspected-region">—</strong></div><div><span>Layer</span><strong id="inspected-layer">Solar flare · radio</strong></div><div><span>Solar side</span><strong id="inspected-daylight">—</strong></div><div><span>Latitude band</span><strong id="inspected-latitude">—</strong></div><div><span>Local solar time</span><strong id="inspected-solar-time">—</strong></div></div>
+        <div class="global-action-box"><span>WHAT THIS CAN MEAN</span><p id="inspected-guidance">Select a location to see the possible system effects and practical checks for this layer.</p></div>
+        <p class="global-disclaimer">Colors show broad impact potential from current NOAA scales, not heat or temperature. Actual effects depend on event type, local conditions, equipment, and timing. Follow official bulletins and operating procedures.</p>
+      </aside>
+    </section>
+
+    <section class="global-layer-notes">
+      <article><span class="layer-note-icon radio-note-icon">R</span><div><h3>Solar flare · radio blackout</h3><p>R-scale flare effects on HF radio and some navigation signals are strongest on Earth's sunlit side. The map marks the subsolar point and current day/night boundary.</p></div></article>
+      <article><span class="layer-note-icon geomagnetic-note-icon">G</span><div><h3>Geomagnetic storm</h3><p>The NOAA G scale is planetary. The map highlights higher geographic latitudes as a broad exposure context for grid and navigation systems, not as a precise local forecast.</p></div></article>
+      <article><span class="layer-note-icon radiation-note-icon">S</span><div><h3>Solar radiation storm</h3><p>The S scale describes energetic-particle conditions. Polar routes, high-altitude operations, and spacecraft may have different concerns; this view does not calculate personal dose.</p></div></article>
+    </section>
+
+    <footer class="global-impact-footer"><span>SpaceWeather Guardian · informational global view</span><div><a href="https://www.spaceweather.gov/impacts" target="_blank" rel="noreferrer">NOAA impacts ↗</a><a href="https://www.spaceweather.gov/noaa-scales-explanation" target="_blank" rel="noreferrer">NOAA scales ↗</a><a href="https://services.swpc.noaa.gov/products/noaa-scales.json" target="_blank" rel="noreferrer">Live scales feed ↗</a></div><small>Not an official warning or site-specific forecast.</small></footer>
+  </main>
+</body>
+</html>
