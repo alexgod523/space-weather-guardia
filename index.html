@@ -52,7 +52,7 @@
           <div class="location-actions"><button class="use-location-button" id="use-location" type="button"><span>◎</span>Use live location</button><form id="location-search-form" class="location-search-form"><label class="sr-only" for="location-search">Search for a city or postal code</label><input id="location-search" type="search" placeholder="Search city or postal code" autocomplete="off"><button type="submit">Search</button></form><a class="clear-location-button maps-link" id="map-link" href="https://www.google.com/maps" target="_blank" rel="noreferrer" hidden>Open in Google Maps ↗</a><button class="clear-location-button" id="clear-location" type="button">Clear</button></div>
           <div class="location-details">
             <div class="location-clock"><span>LOCAL TIME</span><strong id="local-clock">—</strong><small id="local-timezone">Using device time zone</small></div>
-            <label class="altitude-control" for="altitude-select"><span>ALTITUDE BAND</span><select id="altitude-select"><option value="low">Low · 0–3 km</option><option value="mid">Mid · 3–12 km</option><option value="high">High · 12+ km</option></select></label>
+            <label class="altitude-control" for="altitude-select"><span>ALTITUDE BAND</span><select id="altitude-select"><option value="low">Low · 0–3 km</option><option value="mid">Mid · 3–12 km</option><option value="high">High · 12+ km</option></select><small id="altitude-impact">Surface context · waiting for NOAA S scale</small></label>
             <div class="location-outlook"><span>GLOBAL FORECAST · NEXT 24H (LOCAL TIME)</span><strong id="local-outlook">Select a location to localize timing and impact context.</strong></div>
             <div class="location-sky"><span>LOCAL SKY · WEATHER MODEL</span><strong id="local-weather">Waiting for location</strong><small id="local-weather-time">Cloud cover · visibility · daylight</small></div>
           </div>
@@ -234,3 +234,4 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
+
