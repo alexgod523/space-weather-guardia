@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10151f">
+  <meta name="description" content="A live, plain-language space weather dashboard powered by public NOAA SWPC and NASA DONKI data.">
+  <title>SpaceWeather Guardian — Live Space Weather</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#overview" aria-label="SpaceWeather Guardian home">
+      <span class="brand-mark" aria-hidden="true"><span></span></span>
+      <span class="brand-copy"><strong>SpaceWeather</strong><small>GUARDIAN / OPERATIONS</small></span>
+    </a>
+    <div class="topbar-status">
+      <span class="live-indicator" id="live-indicator"><i></i><span id="connection-label">Connecting to public feeds</span></span>
+      <span class="topbar-divider"></span>
+      <span class="updated-label">UPDATED · LOCAL <strong id="updated-at">Waiting for first sync</strong></span>
+      <button class="icon-button" id="refresh-btn" type="button" aria-label="Refresh live data" title="Refresh live data">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M5.6 9a7 7 0 0 1 11.7-2L20 12M4 12l2.7 5a7 7 0 0 0 11.7-2"/></svg>
+      </button>
+      <button class="settings-button" id="settings-btn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.8 1.8 0 0 1-2.5 2.5l-.2-.2a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 0 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.2.2a1.8 1.8 0 0 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3H3.5a1.8 1.8 0 0 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.2A1.8 1.8 0 0 1 7 2.7l.2.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 0 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.2-.1a1.8 1.8 0 0 1 2.5 2.5l-.1.2a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 0 1 0 3.6h-.2a1.8 1.8 0 0 0-.9 3Z"/></svg><span>Settings</span></button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Page navigation">
+      <div class="side-label">MONITOR</div>
+      <nav class="side-nav">
+        <a class="nav-link active" href="#overview"><span class="nav-icon">◉</span>Overview</a>
+        <a class="nav-link" href="#activity"><span class="nav-icon">⌁</span>Live activity</a>
+        <a class="nav-link" href="#impact"><span class="nav-icon">◎</span>Impact view</a>
+        <a class="nav-link" href="./global-impact.html"><span class="nav-icon">◍</span>Global map</a>
+        <a class="nav-link" href="#work-impact"><span class="nav-icon">↗</span>My work</a>
+        <a class="nav-link" href="#alerts"><span class="nav-icon">♧</span>Event feed</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="coverage-heading"><span>FEED COVERAGE</span><strong id="coverage-count">0 / 6</strong></div>
+        <div class="coverage-track"><span id="coverage-bar"></span></div>
+        <p>Live readings from public NOAA SWPC and NASA DONKI services.</p>
+        <a href="https://www.spaceweather.gov/content/data-access" target="_blank" rel="noreferrer">NOAA data access <span>↗</span></a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="location-priority-wrap">
+        <section class="location-panel" id="location-profile" aria-labelledby="location-title">
+          <div class="location-main"><span class="location-icon" aria-hidden="true">⌖</span><div class="location-title-block"><div class="eyebrow">LOCAL IMPACT PROFILE</div><h3 id="location-title">Use live location or choose a place</h3><p id="location-coordinates">Allow the browser location prompt first, or search / enter a place below.</p></div></div>
+          <div class="location-actions"><button class="use-location-button" id="use-location" type="button"><span>◎</span>Use live location</button><form id="location-search-form" class="location-search-form"><label class="sr-only" for="location-search">Search for a city or postal code</label><input id="location-search" type="search" placeholder="Search city or postal code" autocomplete="off"><button type="submit">Search</button></form><a class="clear-location-button maps-link" id="map-link" href="https://www.google.com/maps" target="_blank" rel="noreferrer" hidden>Open in Google Maps ↗</a><button class="clear-location-button" id="clear-location" type="button">Clear</button></div>
+          <div class="location-details">
+            <div class="location-clock"><span>LOCAL TIME</span><strong id="local-clock">—</strong><small id="local-timezone">Using device time zone</small></div>
+            <label class="altitude-control" for="altitude-select"><span>ALTITUDE BAND</span><select id="altitude-select"><option value="low">Low · 0–3 km</option><option value="mid">Mid · 3–12 km</option><option value="high">High · 12+ km</option></select></label>
+            <div class="location-outlook"><span>GLOBAL FORECAST · NEXT 24H (LOCAL TIME)</span><strong id="local-outlook">Select a location to localize timing and impact context.</strong></div>
+            <div class="location-sky"><span>LOCAL SKY · WEATHER MODEL</span><strong id="local-weather">Waiting for location</strong><small id="local-weather-time">Cloud cover · visibility · daylight</small></div>
+          </div>
+          <details class="coordinate-details"><summary>Enter coordinates manually</summary><form id="coordinates-form" class="coordinates-form"><label>Latitude<input id="latitude-input" type="number" step="any" min="-90" max="90" placeholder="e.g. 37.7749" required></label><label>Longitude<input id="longitude-input" type="number" step="any" min="-180" max="180" placeholder="e.g. -122.4194" required></label><label>Time zone <small>optional IANA name</small><input id="timezone-input" type="text" placeholder="e.g. America/Los_Angeles"></label><button type="submit">Use these coordinates</button></form><p>Selected coordinates are used for local weather and time-zone lookup. Coordinates are not sent to NOAA or NASA.</p></details>
+          <div class="location-results" id="location-results" role="listbox" aria-label="Location search results" hidden></div>
+          <div class="location-footer"><span class="location-message" id="location-message" role="status">The browser will ask to use your location first. You can choose a city or enter coordinates instead.</span><span class="location-privacy">Selected coordinates go to <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">Open-Meteo</a> for local sky and time-zone data; city searches use its <a href="https://open-meteo.com/en/docs/geocoding-api" target="_blank" rel="noreferrer">geocoder</a>. NOAA and NASA do not receive your location. Google receives coordinates only if you open its map link.</span></div>
+        </section>
+      </div>
+      <section class="hero-panel" id="overview">
+        <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div><div class="hero-sun"></div>
+        <div class="hero-content">
+          <div class="eyebrow hero-eyebrow"><span class="eyebrow-line"></span>SPACE WEATHER / LIVE OPERATIONS</div>
+          <h1>Read the Sun.<br><span>Prepare for Earth.</span></h1>
+          <p>Complex solar activity, translated into calm, localized guidance for the systems and people that depend on them.</p>
+          <div class="hero-actions"><a href="#activity" class="button button-light">Explore live conditions <span>↓</span></a><span class="hero-source"><i class="tiny-live"></i> Public science feeds · refreshed every 5 min</span></div>
+        </div>
+        <div class="hero-status-card">
+          <div class="status-card-top"><span class="mini-orbit">◉</span><span>GEOMAGNETIC OUTLOOK</span><span class="status-pulse"></span></div>
+          <div class="status-level" id="hero-level">—</div>
+          <div class="status-name" id="hero-status-name">Waiting for NOAA data</div>
+          <div class="status-rule"></div>
+          <div class="status-meta"><span>Current planetary Kp</span><strong id="hero-kp">—</strong></div>
+          <div class="status-meta"><span>Next forecast window</span><strong id="hero-forecast">—</strong></div>
+          <div class="status-footnote">Based on NOAA's observed and forecast Kp values</div>
+        </div>
+        <div class="hero-grid"></div>
+      </section>
+
+      <div class="content-wrap">
+        <div class="section-intro intro-tight">
+          <div><div class="eyebrow">CURRENT CONDITIONS <span class="eyebrow-dot"></span> GLOBAL READINGS · LOCAL TIMES</div><h2>Space weather at a glance</h2></div>
+          <button class="text-button" id="sources-btn" type="button">View data sources <span>↗</span></button>
+        </div>
+
+        <section class="metric-grid" aria-label="Live space weather readings">
+          <article class="metric-card metric-primary"><div class="metric-head"><span>PLANETARY Kp</span><span class="metric-glyph">⌁</span></div><div class="metric-value"><strong id="metric-kp">—</strong><span>/ 9</span></div><div class="metric-caption" id="metric-kp-caption">Loading NOAA index</div><div class="metric-spark" id="spark-kp" aria-hidden="true"></div></article>
+          <article class="metric-card"><div class="metric-head"><span>SOLAR WIND</span><span class="metric-glyph">↗</span></div><div class="metric-value"><strong id="metric-wind">—</strong><span>km/s</span></div><div class="metric-caption" id="metric-wind-caption">Live proton speed · NOAA RTSW</div><div class="metric-footer"><i class="feed-dot" id="dot-wind"></i><span id="time-wind">Waiting for feed</span></div></article>
+          <article class="metric-card"><div class="metric-head"><span>IMF Bz</span><span class="metric-glyph">⌖</span></div><div class="metric-value"><strong id="metric-bz">—</strong><span>nT</span></div><div class="metric-caption" id="metric-bz-caption">North-south magnetic field</div><div class="metric-footer"><i class="feed-dot" id="dot-mag"></i><span id="time-mag">Waiting for feed</span></div></article>
+          <article class="metric-card"><div class="metric-head"><span>ACTIVE SWPC ALERTS</span><span class="metric-glyph">⚑</span></div><div class="metric-value"><strong id="metric-alerts">—</strong><span>notices</span></div><div class="metric-caption" id="metric-alerts-caption">Official watches, warnings & alerts</div><div class="metric-footer"><i class="feed-dot" id="dot-alerts"></i><span id="time-alerts">Waiting for feed</span></div></article>
+        </section>
+
+        <section class="dashboard-grid" id="activity">
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><div class="eyebrow">PLANETARY DISTURBANCE</div><h3>Kp index outlook</h3></div><div class="chart-controls"><span class="chart-legend"><i class="legend-observed"></i>Observed</span><span class="chart-legend"><i class="legend-forecast"></i>Forecast</span><button id="chart-window" type="button" class="mini-select" aria-label="Chart period">72 hours <span>⌄</span></button></div></div>
+            <div class="chart-wrap"><canvas id="kp-chart" role="img" aria-label="NOAA planetary Kp index observed and forecast chart"></canvas><div class="chart-empty" id="chart-empty">Connecting to NOAA Kp feed…</div></div>
+            <div class="chart-foot"><span><i class="feed-dot" id="dot-kp"></i><span id="kp-feed-label">NOAA SWPC planetary Kp forecast</span></span><span>G-scale threshold begins at Kp 5 · <span id="chart-timezone">local time</span></span></div>
+          </article>
+          <article class="panel live-summary-panel">
+            <div class="panel-heading"><div><div class="eyebrow">CONDITIONS BRIEF</div><h3>What the readings mean</h3></div><span class="summary-icon">✳</span></div>
+            <p class="summary-lead" id="condition-summary">Live NOAA observations are loading. The dashboard will translate current values into a plain-language summary as soon as a feed responds.</p>
+            <div class="summary-divider"></div>
+            <div class="mini-reading"><span>Geomagnetic activity</span><strong id="summary-geomag">Waiting</strong></div>
+            <div class="mini-reading"><span>Solar wind speed</span><strong id="summary-wind">Waiting</strong></div>
+            <div class="mini-reading"><span>Solar radiation scale</span><strong id="summary-radiation">Waiting</strong></div>
+            <div class="summary-note"><span>ⓘ</span>Public readings can be delayed or revised. Check the source bulletin for operational decisions.</div>
+          </article>
+        </section>
+
+        <section class="panel alert-panel" id="alerts">
+          <div class="panel-heading alert-heading"><div><div class="eyebrow">NASA DONKI + NOAA SWPC</div><h3>Recent space weather events</h3><p class="panel-subtitle">A single timeline for official bulletins and solar event reports.</p></div><a class="outline-link" href="https://api.nasa.gov/" target="_blank" rel="noreferrer">NASA API docs <span>↗</span></a></div>
+          <div class="event-list" id="event-list"><div class="empty-row"><span class="loading-ring"></span>Loading recent official events…</div></div>
+          <div class="feed-foot"><span><i class="feed-dot" id="dot-nasa"></i><span id="nasa-feed-label">NASA DONKI is connecting</span></span><span><i class="feed-dot" id="dot-noaa-events"></i><span id="noaa-feed-label">NOAA alerts are connecting</span></span></div>
+        </section>
+
+        <section class="sample-incident panel">
+          <div class="panel-heading"><div><div class="eyebrow">PRODUCT SIMULATION / SOURCE PRESENTATION EXAMPLE</div><h3>Example incident notification</h3><p class="panel-subtitle">A preserved sample card from the presentation; this is not a live event.</p></div><span class="sample-badge">ILLUSTRATIVE</span></div>
+          <div class="incident-shell">
+            <div class="incident-head"><span class="incident-severity">G3 ALERT · STRONG GEOMAGNETIC STORM</span><span>Source: NOAA SWPC · 14:20 UTC</span></div>
+            <div class="incident-body">
+              <div class="incident-narrative">
+                <div><span>AI PLAIN SUMMARY</span><p>An Earth-directed coronal mass ejection arrived at 13:45 UTC, elevating magnetosphere turbulence.</p></div>
+                <div><span>OPERATIONAL GUIDANCE</span><p>High-precision GNSS users should confirm corrections. Grid controllers should observe voltage fluctuation protocols.</p></div>
+              </div>
+              <div class="incident-matrix"><strong>Impact matrix <small>EXAMPLE SNAPSHOT</small></strong><div><span>GNSS / GPS</span><b class="example-watch">Moderate risk</b></div><div><span>HF Radio Comms</span><b class="example-risk">Degraded (High Lat)</b></div><div><span>Power Systems</span><b class="example-good">Nominal stability</b></div><div><span>Aurora Visibility</span><b class="example-blue">Elevated down to 50°N</b></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="impact-section" id="impact">
+          <div class="section-intro"><div><div class="eyebrow">LOCALIZED IMPACT VIEW</div><h2>What could be affected?</h2><p>Translate geomagnetic, radiation, and radio blackout indicators into sector-specific checks.</p></div><div class="section-stamp"><span class="stamp-icon">◎</span><span>LIVE DATA<br><strong>RULE-BASED GUIDE</strong></span></div></div>
+          <div class="impact-layout">
+            <div class="impact-matrix panel">
+              <div class="matrix-title"><div><div class="eyebrow">OPERATIONAL IMPACT MATRIX</div><h3>Current exposure by system</h3></div><span class="matrix-live"><i class="tiny-live"></i> UPDATING</span></div>
+              <div class="impact-row"><div class="impact-system"><span class="system-icon">⌖</span><span><strong>GNSS / GPS</strong><small>Positioning & navigation</small></span></div><div class="impact-reading"><span class="impact-state" id="impact-gnss">—</span><small id="impact-gnss-note">Waiting for Kp</small></div><div class="impact-meter"><span id="meter-gnss"></span></div></div>
+              <div class="impact-row"><div class="impact-system"><span class="system-icon">◌</span><span><strong>HF RADIO</strong><small>Ionospheric propagation</small></span></div><div class="impact-reading"><span class="impact-state" id="impact-radio">—</span><small id="impact-radio-note">Waiting for R/S scale</small></div><div class="impact-meter"><span id="meter-radio"></span></div></div>
+              <div class="impact-row"><div class="impact-system"><span class="system-icon">ϟ</span><span><strong>POWER SYSTEMS</strong><small>Geomagnetically induced current</small></span></div><div class="impact-reading"><span class="impact-state" id="impact-power">—</span><small id="impact-power-note">Waiting for G scale</small></div><div class="impact-meter"><span id="meter-power"></span></div></div>
+              <div class="impact-row"><div class="impact-system"><span class="system-icon">↟</span><span><strong>RADIATION CONTEXT</strong><small>Solar radiation scale + altitude</small></span></div><div class="impact-reading"><span class="impact-state" id="impact-radiation">—</span><small id="impact-radiation-note">Waiting for altitude profile</small></div><div class="impact-meter"><span id="meter-radiation"></span></div></div>
+              <div class="impact-row"><div class="impact-system"><span class="system-icon">✧</span><span><strong>AURORA VISIBILITY</strong><small>OVATION probability model</small></span></div><div class="impact-reading"><span class="impact-state" id="impact-aurora">—</span><small id="impact-aurora-note">Waiting for NOAA model</small></div><div class="impact-meter"><span id="meter-aurora"></span></div></div>
+              <div class="matrix-legend"><span><i class="legend-dot nominal"></i>Nominal</span><span><i class="legend-dot watch"></i>Watch</span><span><i class="legend-dot elevated"></i>Elevated</span><span class="matrix-note">Indicators are informational, not service guarantees.</span></div>
+            </div>
+            <aside class="guidance-card">
+              <div class="guidance-top"><span class="guidance-spark">✳</span><span>PERSONALIZED OPERATIONAL CHECK</span></div>
+              <label for="sector-select">Choose the closest operating profile</label>
+              <select id="sector-select" class="select-field">
+                <option value="survey">Precision farming & surveying</option>
+                <option value="aviation">Drone pilots & remote aviation</option>
+                <option value="radio">Amateur radio operators</option>
+                <option value="power">Power system operators</option>
+                <option value="research">Aerospace students & academics</option>
+                <option value="public">General public & aurora watchers</option>
+              </select>
+              <div class="guidance-rule"></div>
+              <div class="guidance-label"><span>RECOMMENDED CHECK</span><span class="guidance-confidence" id="coverage-confidence">SOURCE COVERAGE —</span></div>
+              <p class="guidance-copy" id="sector-guidance">Select a profile to see a practical check grounded in the current public readings.</p>
+              <div class="guidance-citation"><span>Grounded in live NOAA SWPC data</span><a href="https://www.spaceweather.gov/" target="_blank" rel="noreferrer">Source ↗</a></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="profession-section" id="work-impact" aria-labelledby="profession-title">
+          <div class="section-intro"><div><div class="eyebrow">YOUR WORK · LIVE SPACE WEATHER</div><h2 id="profession-title">How could space weather affect your work?</h2><p>Enter a profession for a plain-language impact check and practical steps, based on current NOAA readings and your selected location profile.</p></div><div class="section-stamp"><span class="stamp-icon">↗</span><span>LOCAL ADVISOR<br><strong>RULE-BASED</strong></span></div></div>
+          <article class="profession-card panel">
+            <form class="profession-form" id="profession-form">
+              <label for="profession-input">What is your profession?</label>
+              <div class="profession-input-row"><input id="profession-input" name="profession" type="text" maxlength="80" list="profession-suggestions" placeholder="e.g. farmer, pilot, radio operator" autocomplete="off" required><datalist id="profession-suggestions"><option value="Precision farmer"></option><option value="Land surveyor"></option><option value="Drone pilot"></option><option value="Airline crew member"></option><option value="Amateur radio operator"></option><option value="Electric grid worker"></option><option value="Emergency responder"></option><option value="Healthcare worker"></option><option value="Satellite engineer"></option><option value="Delivery driver"></option><option value="Teacher or student"></option></datalist><button class="button button-dark" type="submit">Show my impact <span>→</span></button></div>
+              <p class="profession-privacy">Your profession stays in this page's memory. It is not saved or sent to NOAA, NASA, or another service.</p>
+            </form>
+            <div class="profession-result" id="profession-result">
+              <div class="profession-empty" id="profession-empty"><span class="profession-orbit">✳</span><div><strong>Your work impact check will appear here.</strong><p>It uses current public readings to explain technology dependencies, possible effects, timing context, and practical precautions. It cannot predict a personal outcome.</p></div></div>
+              <div class="profession-report" id="profession-report" hidden>
+                <div class="profession-report-head"><div><div class="eyebrow" id="profession-category">WORK IMPACT CHECK</div><h3 id="profession-result-title"></h3></div><span class="profession-status" id="profession-status" role="status" aria-live="polite">WAITING FOR DATA</span></div>
+                <p class="profession-context" id="profession-live-context"></p>
+                <div class="profession-report-grid">
+                  <section class="profession-report-block"><div class="profession-report-label">POSSIBLE WORK IMPACT</div><p id="profession-work-impact"></p></section>
+                  <section class="profession-report-block"><div class="profession-report-label">PRACTICAL STEPS</div><ul id="profession-actions"></ul></section>
+                </div>
+                <p class="profession-life-note" id="profession-life-impact"></p>
+                <div class="profession-source-row"><span>Official references</span><div id="profession-sources"></div></div>
+                <p class="profession-disclaimer">This is general information, not a site-specific forecast, medical assessment, or operational instruction. Check current official bulletins and follow your employer's procedures.</p>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="map-section">
+          <div class="section-intro"><div><div class="eyebrow">LATITUDE IMPACT VIEW</div><h2>Explore the aurora oval in 3D</h2><p>Rotate the globe to explore NOAA OVATION probability around Earth. The selected place remains marked when it is on the visible hemisphere.</p></div><a class="text-button map-source" href="https://services.swpc.noaa.gov/json/ovation_aurora_latest.json" target="_blank" rel="noreferrer">Open OVATION feed ↗</a></div>
+          <div class="map-layout panel">
+            <div class="polar-map globe-stage"><div class="map-toolbar"><span class="globe-feed-label"><i class="tiny-live"></i> NOAA OVATION · LIVE GLOBE</span><div class="globe-toolbar-controls"><div class="hemisphere-toggle" role="group" aria-label="Select hemisphere"><button class="active" type="button" data-hemisphere="north">NORTH</button><button type="button" data-hemisphere="south">SOUTH</button></div><div class="globe-zoom-controls" role="group" aria-label="Globe zoom"><button id="globe-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button><button id="globe-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button></div><button class="globe-reset-button" id="globe-reset" type="button">Reset view</button></div></div><canvas id="aurora-map" tabindex="0" role="application" aria-label="Interactive NOAA aurora globe" aria-describedby="globe-help"></canvas><span class="globe-help" id="globe-help">Drag to rotate · hover for cell probability · scroll or + / − to zoom · arrow keys also rotate</span><div class="globe-readout" id="globe-readout">NOAA OVATION · waiting for model</div><div class="map-empty" id="map-empty">Loading NOAA aurora model…</div></div>
+            <div class="map-aside"><div class="eyebrow">MODEL SNAPSHOT</div><div class="map-stat"><strong id="aurora-min-lat">—</strong><span>equatorward latitude<br>with ≥20% model probability</span></div><div class="map-update"><span>At selected location</span><strong id="aurora-local-probability">Set a location</strong></div><div class="map-update"><span>Observation</span><strong id="aurora-observation">Waiting for model</strong></div><div class="map-update"><span>Forecast target</span><strong id="aurora-forecast-time">—</strong></div><div class="aurora-legend"><span>Probability</span><div class="gradient-bar"></div><div class="legend-numbers"><span>Low</span><span>High</span></div></div><p class="map-disclaimer">Aurora visibility depends on darkness, cloud cover, local light, and the model forecast. A probability map is not a guarantee that aurora can be seen.</p></div>
+          </div>
+        </section>
+
+        <section class="explainer-section panel">
+          <div class="explainer-copy"><div class="eyebrow">PLAIN-LANGUAGE ASSISTANT</div><h3>Ask what the numbers mean.</h3><p>This local advisor uses rule-based explanations from the live NOAA and NASA readings. It does not invent an event or replace an official bulletin.</p><div class="prompt-chips"><button type="button" data-question="What does the current Kp mean?">Explain the Kp reading</button><button type="button" data-question="Could GPS be affected?">Could GPS be affected?</button><button type="button" data-question="What should I check for radio?">What should radio operators check?</button></div></div>
+          <div class="assistant-box"><form id="assistant-form"><label class="sr-only" for="assistant-question">Ask about current space weather</label><input id="assistant-question" type="text" placeholder="Ask about GPS, radio, power, aurora…" autocomplete="off"><button type="submit" aria-label="Ask assistant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-5 16-3-7-8-1Z M12 13l8-9"/></svg></button></form><div class="assistant-answer" id="assistant-answer"><span class="answer-mark">✳</span><span>Choose a prompt or ask about a system to get a concise, source-grounded explanation.</span></div><div class="assistant-source" id="assistant-source">No response generated yet</div></div>
+        </section>
+
+        <section class="proof-section">
+          <div class="section-intro"><div><div class="eyebrow">HISTORICAL PROOF</div><h2>Space weather has operational consequences</h2><p>Reference figures retained from the source presentation.</p></div><span class="archive-mark">HISTORICAL CASES / 01—03</span></div>
+          <div class="proof-grid">
+            <article class="proof-card"><div class="proof-number">6<span>M</span></div><div class="proof-tag">QUEBEC BLACKOUT · 1989</div><h3>Grid collapse in 90 seconds</h3><p>Geomagnetically induced currents led to the collapse of the grid within 90 seconds.</p><div class="proof-line"></div><span class="proof-index">CASE 01</span></article>
+            <article class="proof-card"><div class="proof-number">10<span>×+</span></div><div class="proof-tag">GPS ERROR DETERIORATION</div><h3>Positioning errors expand</h3><p>Positioning can shift from sub-meter accuracy to errors of tens of meters.</p><div class="proof-line"></div><span class="proof-index">CASE 02</span></article>
+            <article class="proof-card"><div class="proof-number">18<span>h</span></div><div class="proof-tag">CME TRANSIT WINDOW</div><h3>A narrow preparation buffer</h3><p>Minimum preparation buffer cited before severe geomagnetic impact.</p><div class="proof-line"></div><span class="proof-index">CASE 03</span></article>
+          </div>
+          <div class="source-caveat">These figures are carried over from the source presentation and are presented as reference points, not live measurements.</div>
+        </section>
+
+        <section class="risk-section">
+          <div class="section-intro"><div><div class="eyebrow">THE VULNERABILITY</div><h2>The real-life technology risk</h2></div></div>
+          <div class="risk-layout"><article class="risk-callout"><span class="risk-icon">ϟ</span><div><h3>Solar activity is not science fiction.</h3><p>Coronal mass ejections and radiation storms can disturb Earth's power, communications, and orbital networks.</p></div></article><div class="risk-list"><article><span class="risk-index">01</span><div><h3>GNSS & GPS drift</h3><p>Disrupts survey-grade navigation and polar aviation routes.</p></div><span class="risk-arrow">↗</span></article><article><span class="risk-index">02</span><div><h3>HF radio blackouts</h3><p>Interrupts maritime links and emergency transceivers.</p></div><span class="risk-arrow">↗</span></article><article><span class="risk-index">03</span><div><h3>Grid current surges</h3><p>Induces damaging geomagnetically induced currents.</p></div><span class="risk-arrow">↗</span></article></div></div>
+        </section>
+
+        <section class="closing-panel"><div class="closing-orb"></div><div class="eyebrow">SPACEWEATHER GUARDIAN</div><h2>Stay informed.<br><span>Stay ready.</span></h2><p>A unified view of the Sun's activity, grounded in public science data.</p><a href="#overview" class="button button-light">Back to live overview ↑</a></section>
+      </div>
+      <footer class="page-footer"><div class="footer-brand"><span class="brand-mark small-mark"><span></span></span><strong>SpaceWeather Guardian</strong></div><p>Data from public NOAA SWPC services and NASA DONKI. This informational dashboard is not an official warning system.</p><div class="footer-links"><a href="https://www.spaceweather.gov/content/data-access" target="_blank" rel="noreferrer">NOAA SWPC data ↗</a><a href="https://api.nasa.gov/" target="_blank" rel="noreferrer">NASA Open APIs ↗</a></div></footer>
+    </main>
+  </div>
+
+  <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+    <form method="dialog" class="dialog-shell" id="settings-form">
+      <div class="dialog-top"><div><div class="eyebrow">PREFERENCES</div><h2 id="settings-title">Dashboard settings</h2></div><button class="close-button" type="button" id="close-settings" aria-label="Close settings">×</button></div>
+      <div class="setting-field"><label for="nasa-key">NASA API key <span>OPTIONAL</span></label><input id="nasa-key" type="password" placeholder="Using NASA DEMO_KEY" autocomplete="off"><small>The provided link is API documentation, not a key. An optional key stays in this browser only. NOAA feeds do not need a key.</small></div>
+      <div class="setting-row"><label for="threshold-select">Notify at geomagnetic storm level</label><select id="threshold-select" class="select-field"><option value="1">G1 · Minor</option><option value="2">G2 · Moderate</option><option value="3">G3 · Strong</option><option value="4">G4 · Severe</option><option value="5">G5 · Extreme</option></select></div>
+      <label class="toggle-row" for="notifications-toggle"><span><strong>Browser notifications</strong><small>Alert when the selected G-scale threshold is reached.</small></span><input type="checkbox" id="notifications-toggle"><span class="toggle-ui"></span></label>
+      <div class="privacy-note"><span>⌑</span><p>The NASA key and alert preferences stay in this browser's local storage. The key is sent only to api.nasa.gov with NASA feed requests.</p></div>
+      <div class="dialog-actions"><button class="button button-quiet" type="button" id="clear-key">Clear key</button><button class="button button-dark" type="submit" id="save-settings">Save preferences</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
